@@ -1,2 +1,7 @@
-stats/
-data/
+# ignore everything under stats/ and data/
+stats/*
+data/*
+
+# but don’t ignore the directories themselves
+!stats/
+!data/
