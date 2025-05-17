@@ -41,7 +41,6 @@ def ansi_hyperlink(text: str, url: str) -> str:
 def process_spotify_data(file_pattern: str):
     files = glob.glob(file_pattern)
     if not files:
-        print("🔍 Файли не знайдено. Вміст теки:", os.listdir('.'))
         raise FileNotFoundError(f"Жоден файл за шаблоном '{file_pattern}' не знайдено")
 
     data = []
@@ -55,7 +54,6 @@ def process_spotify_data(file_pattern: str):
 
     df = pd.DataFrame(data)
     if 'ts' not in df.columns:
-        print("❌ Колонки у DataFrame:", df.columns.tolist())
         raise KeyError("У даних немає поля 'ts'")
 
     df['ts'] = pd.to_datetime(df['ts'])
@@ -151,60 +149,51 @@ if __name__ == "__main__":
      years_per_author) = process_spotify_data('*.json')
 
     stats_dir = 'stats'
-    if not os.path.exists(stats_dir):
-        os.makedirs(stats_dir)
-    else:
-        for fn in os.listdir(stats_dir):
-            path = os.path.join(stats_dir, fn)
-            if os.path.isfile(path):
-                os.remove(path)
+    os.makedirs(stats_dir, exist_ok=True)
+    # Очищуємо теку (видаляємо лише файли)
+    for fn in os.listdir(stats_dir):
+        path = os.path.join(stats_dir, fn)
+        if os.path.isfile(path):
+            os.remove(path)
 
     # Запис years.txt
     years_path = os.path.join(stats_dir, 'years.txt')
     with open(years_path, 'w', encoding='utf-8') as f:
         # Загальний час
         header = f"✅ Успішно оброблено! Загальний час прослуховування: {format_hms(total_seconds)}\n\n"
-        print(header, end='')
         f.write(header)
 
         # Топ-5 треків за роками
         section = "🏆 Топ-5 треків за роками:\n"
-        print(section, end='')
         f.write(section)
         for year in sorted(sec_per_year['year']):
             total_y = sec_per_year.loc[sec_per_year['year']==year, 'seconds_played'].iloc[0]
             year_header = f"\n{int(year)}: {format_hms(total_y)}\n"
-            print(year_header, end='')
             f.write(year_header)
             for _, r in top5_per_year[top5_per_year['year']==year].iterrows():
                 line = (f" {r['master_metadata_track_name']}: {format_hms(r['seconds_played'])} "
                         f"({r['plays']} plays) {format_years(r['years_list'])}\n")
-                print(line, end='')
                 f.write(line)
 
         # Топ-10 треків за весь час
         section2 = "\n🌍 Топ-10 треків за весь час:\n"
-        print(section2, end='')
         f.write(section2)
         for _, r in top10_overall.iterrows():
             line = (f" {r['master_metadata_track_name']}: {format_hms(r['seconds_played'])} "
                     f"({r['plays']} plays) {format_years(r['years_list'])}\n")
-            print(line, end='')
             f.write(line)
 
         # Топ-15 авторів за весь час з роками
         section3 = "\n🌍 Топ-15 авторів за весь час:\n"
-        print(section3, end='')
         f.write(section3)
         for _, a in author_stats.iterrows():
             author = a['master_metadata_album_artist_name']
             years_str = format_years(years_per_author.get(author, []))
             line = (f" {author}: {format_hms(a['total_seconds'])} "
                     f"({a['plays']} plays) {years_str}\n")
-            print(line, end='')
             f.write(line)
 
-    # Запис authors.txt (без змін)
+    # Запис authors.txt
     authors_path = os.path.join(stats_dir, 'authors.txt')
     with open(authors_path, 'w', encoding='utf-8') as f:
         for _, a in author_stats.iterrows():
@@ -219,5 +208,3 @@ if __name__ == "__main__":
                     f"({t['plays']} plays) {format_years(t['years_list'])}\n"
                 )
             f.write("\n")
-
-    print(f"✅ Дані авторів (топ-15) записані до {authors_path}")
