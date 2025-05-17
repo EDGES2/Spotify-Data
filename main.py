@@ -41,7 +41,7 @@ def process_spotify_data(file_pattern: str):
     df['ts'] = pd.to_datetime(df['ts'])
     df['year'] = df['ts'].dt.year
     
-    # Додаємо seconds_played (ms_played може бути відсутнім)
+    # Додаємо секунди прослуховування
     df['ms_played'] = df.get('ms_played', 0)
     df['seconds_played'] = df['ms_played'] / 1000.0
     
@@ -51,18 +51,34 @@ def process_spotify_data(file_pattern: str):
     # Час прослуховування по роках
     sec_per_year = df.groupby('year')['seconds_played'].sum().reset_index()
     
-    # Топ 5 треків за секундами по року
+    # Готуємо групування для треків: підрахунок часу і кількості програвань
+    # По роках
+    track_year_stats = (
+        df.groupby(['year', 'master_metadata_track_name'])
+          .agg(
+              seconds_played=('seconds_played', 'sum'),
+              plays=('master_metadata_track_name', 'count')
+          )
+          .reset_index()
+    )
     top5_per_year = (
-        df.groupby(['year', 'master_metadata_track_name'])['seconds_played']
-          .sum().reset_index()
+        track_year_stats
           .sort_values(['year', 'seconds_played'], ascending=[True, False])
-          .groupby('year').head(5)
+          .groupby('year')
+          .head(5)
     )
     
-    # Топ 10 треків за весь час
+    # За весь час
+    track_overall_stats = (
+        df.groupby('master_metadata_track_name')
+          .agg(
+              seconds_played=('seconds_played', 'sum'),
+              plays=('master_metadata_track_name', 'count')
+          )
+          .reset_index()
+    )
     top10_overall = (
-        df.groupby('master_metadata_track_name')['seconds_played']
-          .sum().reset_index()
+        track_overall_stats
           .sort_values('seconds_played', ascending=False)
           .head(10)
     )
@@ -81,19 +97,21 @@ if __name__ == "__main__":
     for _, row in sec_per_year.iterrows():
         print(f"{int(row['year'])}: {format_hms(row['seconds_played'])}")
     
-    # Топ‑5 треків за рік
+    # Топ‑5 треків за рік із кількістю програвань
     print("\nТоп‑5 треків за часом прослуховування у кожному році:")
-    for year in sorted(sec_per_year['year']):
+    for year in sorted(top5_per_year['year'].unique()):
         print(f"\n{int(year)}:")
         subset = top5_per_year[top5_per_year['year'] == year]
         for _, r in subset.iterrows():
             name = r['master_metadata_track_name']
             secs = r['seconds_played']
-            print(f"  {name}: {format_hms(secs)}")
+            plays = r['plays']
+            print(f"  {name}: {format_hms(secs)} ({plays} plays)")
     
-    # Топ‑10 треків за весь час
+    # Топ‑10 треків за весь час із кількістю програвань
     print("\nТоп‑10 треків за весь час:")
     for _, r in top10_overall.iterrows():
         name = r['master_metadata_track_name']
         secs = r['seconds_played']
-        print(f"  {name}: {format_hms(secs)}")
+        plays = r['plays']
+        print(f"  {name}: {format_hms(secs)} ({plays} plays)")
