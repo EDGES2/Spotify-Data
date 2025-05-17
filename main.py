@@ -146,7 +146,7 @@ if __name__ == "__main__":
     (total_seconds, sec_per_year,
      top5_per_year, top10_overall,
      author_stats, author_top5,
-     years_per_author) = process_spotify_data('*.json')
+     years_per_author) = process_spotify_data('data/Streaming_History_Audio_*.json')
 
     stats_dir = 'stats'
     os.makedirs(stats_dir, exist_ok=True)
