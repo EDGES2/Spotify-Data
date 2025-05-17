@@ -22,6 +22,34 @@ The script uses built-in modules and `pandas`:
 
 ---
 
+## ⬇️ Downloading Your Data
+
+Before running the script, you need to download your extended streaming history from Spotify:
+
+1. Open your browser and navigate to Spotify’s Privacy page:
+
+   ```
+   https://www.spotify.com/account/privacy/
+   ```
+2. Under **Download your data**, select **Account data**
+<img width="750" alt="Screenshot 2025-05-17 at 17 29 49" src="https://github.com/user-attachments/assets/9452eb10-09ff-4a3a-aec3-c63adee10cb4" />
+
+3. Click **Request data** and wait for the email link (valid for 14 days).
+
+4. Confirm request to download data
+<img width="481" alt="Screenshot 2025-05-17 at 17 32 07" src="https://github.com/user-attachments/assets/ce745581-abf0-44fa-b434-95d4baa03292" />
+
+5. After confirming, you’ll be redirected back to the Spotify website, where you’ll see a confirmation of your request
+<img width="807" alt="Screenshot 2025-05-17 at 17 32 22" src="https://github.com/user-attachments/assets/b378648d-6456-4ab6-a93e-213720663075" />
+
+6. You will receive this message by email (preparation of your data may take 1–2 days)
+<img width="469" alt="Screenshot 2025-05-17 at 17 32 37" src="https://github.com/user-attachments/assets/9971b808-2275-4da6-a00f-cc7ba9211f83" />
+
+7. In the email, click **Download your data** to get a ZIP archive
+<img width="464" alt="Screenshot 2025-05-17 at 17 32 55" src="https://github.com/user-attachments/assets/9a1e0719-76e7-4250-b777-eb7f946fa62b" />
+
+8. Extract the archive and locate files named `Streaming_History_Audio_*.json`.
+
 ## 📂 Input Files
 
 Place your Spotify streaming history JSON files in a directory, for example:
