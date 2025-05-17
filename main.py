@@ -195,14 +195,14 @@ if __name__ == "__main__":
             secs = a['total_seconds']
             plays = a['plays']
             f.write(f"{author}: {format_hms(secs)} ({plays} plays)\n")
-            f.write("Топ 5 треків по цьому автору:\n")
+            # f.write("Топ 5 треків по цьому автору:\n")
             top5 = author_top5[author_top5['master_metadata_album_artist_name'] == author]
             for _, t in top5.iterrows():
                 track = t['master_metadata_track_name']
                 secs_t = t['seconds_played']
                 plays_t = t['plays']
                 years_str = format_years(t['years_list'])
-                f.write(f"- {track}: {format_hms(secs_t)} ({plays_t} plays) {years_str}\n")
+                f.write(f" {track}: {format_hms(secs_t)} ({plays_t} plays) {years_str}\n")
             f.write("\n")
 
     print(f"✅ Дані авторів (топ-15) записані до {authors_path}")
