@@ -4,7 +4,9 @@ import os
 import pandas as pd
 import calendar
 
+
 mefilepass = 'data/Me/Streaming_History_Audio_*.json'
+filepass = mefilepass
 
 # Форматування часу в HHh MMm SSs
 def format_hms(total_seconds: float) -> str:
@@ -158,7 +160,7 @@ def process_spotify_data(file_pattern: str):
     }
 
 if __name__ == "__main__":
-    stats = process_spotify_data(mefilepass)
+    stats = process_spotify_data(filepass)
 
     # Створюємо директорію для результатів перед записом файлів
     stats_dir = 'stats'
