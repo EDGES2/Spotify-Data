@@ -20,22 +20,15 @@ def format_years(years: list[int]) -> str:
         if y == prev + 1:
             prev = y
         else:
-            if start == prev:
-                ranges.append(f"{start}")
-            else:
-                ranges.append(f"{start}-{prev}")
+            ranges.append(f"{start}-{prev}" if start != prev else f"{start}")
             start = prev = y
-    # додати останній
-    if start == prev:
-        ranges.append(f"{start}")
-    else:
-        ranges.append(f"{start}-{prev}")
+    ranges.append(f"{start}-{prev}" if start != prev else f"{start}")
     return ", ".join(ranges)
 
 # Перетворюємо URI у відкритий URL
 def make_spotify_url(uri: str) -> str:
     if isinstance(uri, str) and uri.startswith("spotify:track:"):
-        track_id = uri.split(":")[-1]
+        track_id = uri.split(':')[-1]
         return f"https://open.spotify.com/track/{track_id}"
     return ""
 
@@ -73,6 +66,13 @@ def process_spotify_data(file_pattern: str):
     total_seconds = df['seconds_played'].sum()
     sec_per_year = df.groupby('year')['seconds_played'].sum().reset_index()
 
+    # Підрахунок років прослуховування для кожного треку
+    years_per_track = (
+        df.groupby(['master_metadata_track_name','spotify_track_uri'])['year']
+          .apply(lambda yrs: sorted(set(yrs)))
+          .reset_index(name='years_list')
+    )
+
     # Топ-5 треків по кожному року
     track_year = (
         df.groupby(['year', 'master_metadata_track_name', 'spotify_track_uri'])
@@ -83,38 +83,42 @@ def process_spotify_data(file_pattern: str):
         track_year.sort_values(['year','seconds_played'], ascending=[True,False])
                    .groupby('year').head(5)
     )
+    top5_per_year = top5_per_year.merge(
+        years_per_track,
+        on=['master_metadata_track_name','spotify_track_uri'], how='left'
+    )
 
-    # Топ-10 треків загалом з підрахунком років прослуховування
-    # Спочатку базова агрегація
+    # Топ-10 треків загалом з роками
     track_overall = (
         df.groupby(['master_metadata_track_name','spotify_track_uri'])
-          .agg(seconds_played=('seconds_played','sum'),
-               plays=('master_metadata_track_name','count'),
-               years_list=('year', lambda yrs: sorted(set(yrs))))
+          .agg(seconds_played=('seconds_played','sum'), plays=('master_metadata_track_name','count'))
           .reset_index()
     )
-    top10_overall = track_overall.sort_values('seconds_played', ascending=False).head(10)
+    top10_overall = track_overall.merge(
+        years_per_track,
+        on=['master_metadata_track_name','spotify_track_uri'], how='left'
+    ).sort_values('seconds_played', ascending=False).head(10)
 
     # Статистика по авторам
     author_stats = (
         df.groupby('master_metadata_album_artist_name')
-          .agg(total_seconds=('seconds_played','sum'),
-               plays=('master_metadata_track_name','count'))
+          .agg(total_seconds=('seconds_played','sum'), plays=('master_metadata_track_name','count'))
           .reset_index()
     ).sort_values('total_seconds', ascending=False).head(15)
 
-    # Топ-5 треків кожного автора (мінімум 5 прослуховувань), з роками
+    # Топ-5 треків авторів з роками
     author_top_tracks = (
-        df.groupby(['master_metadata_album_artist_name', 'master_metadata_track_name', 'spotify_track_uri'])
-          .agg(seconds_played=('seconds_played','sum'),
-               plays=('master_metadata_track_name','count'),
-               years_list=('year', lambda yrs: sorted(set(yrs))))
+        df.groupby(['master_metadata_album_artist_name','master_metadata_track_name','spotify_track_uri'])
+          .agg(seconds_played=('seconds_played','sum'), plays=('master_metadata_track_name','count'))
           .reset_index()
     )
     author_top5 = (
         author_top_tracks[author_top_tracks['plays'] > 5]
           .sort_values(['master_metadata_album_artist_name','seconds_played'], ascending=[True,False])
           .groupby('master_metadata_album_artist_name').head(5)
+    ).merge(
+        years_per_track,
+        on=['master_metadata_track_name','spotify_track_uri'], how='left'
     )
 
     return total_seconds, sec_per_year, top5_per_year, top10_overall, author_stats, author_top5
@@ -124,7 +128,6 @@ if __name__ == "__main__":
         process_spotify_data('*.json')
 
     stats_dir = 'stats'
-    # Створюємо або очищаємо папку stats
     if not os.path.exists(stats_dir):
         os.makedirs(stats_dir)
     else:
@@ -133,61 +136,53 @@ if __name__ == "__main__":
             if os.path.isfile(path):
                 os.remove(path)
 
-    # ===================== Запис month.txt =====================
-    month_path = os.path.join(stats_dir, 'month.txt')
-    with open(month_path, 'w', encoding='utf-8') as f:
-        # Загальний час
+    # Запис years.txt
+    years_path = os.path.join(stats_dir, 'years.txt')
+    with open(years_path, 'w', encoding='utf-8') as f:
         header = f"✅ Успішно оброблено! Загальний час прослуховування: {format_hms(total_seconds)}\n\n"
         print(header, end='')
         f.write(header)
 
-        # По роках
-        section = "📆 Час прослуховування по роках:\n"
-        print(section, end='')
-        f.write(section)
-        for _, row in sec_per_year.iterrows():
-            line = f"- {int(row['year'])}: {format_hms(row['seconds_played'])}\n"
-            print(line, end='')
-            f.write(line)
-        print(); f.write("\n")
-
-        # Топ-5 по роках
         section = "🏆 Топ-5 треків за роками:\n"
         print(section, end='')
         f.write(section)
-        for year in sorted(top5_per_year['year'].unique()):
-            year_header = f"\n{int(year)}\n"
+
+        for year in sorted(sec_per_year['year']):
+            total_y = sec_per_year[sec_per_year['year'] == year]['seconds_played'].iloc[0]
+            year_header = f"\n{int(year)}: {format_hms(total_y)}\n"
             print(year_header, end='')
             f.write(year_header)
+
             subset = top5_per_year[top5_per_year['year'] == year]
             for _, r in subset.iterrows():
-                name = r['master_metadata_track_name']
-                url = make_spotify_url(r['spotify_track_uri'])
-                plays = r['plays']
-                secs = r['seconds_played']
-                console_title = ansi_hyperlink(name, url)
-                line_console = f" {console_title}: {format_hms(secs)} ({plays} plays)\n"
-                print(line_console, end='')
-                line_file = f" {name}: {format_hms(secs)} ({plays} plays)\n"
-                f.write(line_file)
+                line = (
+                    f" {r['master_metadata_track_name']}: {format_hms(r['seconds_played'])} "
+                    f"({r['plays']} plays) {format_years(r['years_list'])}\n"
+                )
+                print(line, end='')
+                f.write(line)
 
-        # Топ-10 за весь час із роками
-        section = "\n🌍 Топ-10 треків за весь час:\n"
-        print(section, end='')
-        f.write(section)
+        section2 = "\n🌍 Топ-10 треків за весь час:\n"
+        print(section2, end='')
+        f.write(section2)
         for _, r in top10_overall.iterrows():
-            name = r['master_metadata_track_name']
-            url = make_spotify_url(r['spotify_track_uri'])
-            plays = r['plays']
-            secs = r['seconds_played']
-            years_str = format_years(r['years_list'])
-            console_title = ansi_hyperlink(name, url)
-            line_console = f" {console_title}: {format_hms(secs)} ({plays} plays) {years_str}\n"
-            print(line_console, end='')
-            line_file = f" {name}: {format_hms(secs)} ({plays} plays) {years_str}\n"
-            f.write(line_file)
+            line = (
+                f" {r['master_metadata_track_name']}: {format_hms(r['seconds_played'])} "
+                f"({r['plays']} plays) {format_years(r['years_list'])}\n"
+            )
+            print(line, end='')
+            f.write(line)
 
-    # ===================== Запис authors.txt =====================
+        # Топ-15 авторів за весь час
+        section3 = "\n🌍 Топ-15 авторів за весь час:\n"
+        print(section3, end='')
+        f.write(section3)
+        for _, a in author_stats.iterrows():
+            line = f" {a['master_metadata_album_artist_name']}: {format_hms(a['total_seconds'])} ({a['plays']} plays)\n"
+            print(line, end='')
+            f.write(line)
+
+    # Запис authors.txt (без змін)
     authors_path = os.path.join(stats_dir, 'authors.txt')
     with open(authors_path, 'w', encoding='utf-8') as f:
         for _, a in author_stats.iterrows():
@@ -195,14 +190,12 @@ if __name__ == "__main__":
             secs = a['total_seconds']
             plays = a['plays']
             f.write(f"{author}: {format_hms(secs)} ({plays} plays)\n")
-            # f.write("Топ 5 треків по цьому автору:\n")
             top5 = author_top5[author_top5['master_metadata_album_artist_name'] == author]
             for _, t in top5.iterrows():
-                track = t['master_metadata_track_name']
-                secs_t = t['seconds_played']
-                plays_t = t['plays']
-                years_str = format_years(t['years_list'])
-                f.write(f" {track}: {format_hms(secs_t)} ({plays_t} plays) {years_str}\n")
+                f.write(
+                    f" {t['master_metadata_track_name']}: {format_hms(t['seconds_played'])} "
+                    f"({t['plays']} plays) {format_years(t['years_list'])}\n"
+                )
             f.write("\n")
 
     print(f"✅ Дані авторів (топ-15) записані до {authors_path}")
