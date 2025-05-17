@@ -135,7 +135,6 @@ stats/
 
 * Ensure your streaming history JSON files are encoded in UTF-8.
 * The script skips files automatically if none match the given path.
-* Monthly stats labels are written in Ukrainian (e.g., "Топ-5 пісень").
 
 ---
 
