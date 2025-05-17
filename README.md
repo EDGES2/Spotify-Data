@@ -1,46 +1,50 @@
-🎧 Spotify Listening History Analyzer
-This Python script analyzes and summarizes your Spotify listening history from exported JSON files. It generates monthly and yearly statistics about your most played tracks and artists, including top lists and total listening time.
+**🎧 Spotify Listening History Analyzer**
 
-📦 Required Packages
-Make sure the following Python packages are installed:
+Цей Python-скрипт аналізує та узагальнює вашу історію прослуховувань Spotify з експорту JSON-файлів. Скрипт генерує місячну та річну статистику ваших найпрограніших треків та артистів, включаючи топ-листи та загальний час прослуховувань.
 
-bash
-Copy
-Edit
+---
+
+## 📦 Необхідні пакети
+
+Переконайтеся, що встановлені наступні Python-пакети:
+
+```bash
 pip install pandas
-The script uses only built-in and pandas packages:
+```
 
-json — for reading JSON data
+Скрипт використовує тільки вбудовані модулі та `pandas`:
 
-glob — for file pattern matching
+* `json` — для читання JSON-даних
+* `glob` — для пошуку файлів за шаблоном
+* `os` — для роботи з каталогами та файлами
+* `pandas` — для маніпуляцій та групування даних
+* `calendar` — для перетворення номерів місяців у назви
 
-os — for directory and file operations
+---
 
-pandas — for data manipulation and grouping
+## 📂 Вхідні дані
 
-calendar — for converting month numbers to month names
+Розмістіть файли вашої історії прослуховувань у директорії, наприклад:
 
-📂 Input
-Place your Spotify streaming history files in a directory such as:
-
-kotlin
-Copy
-Edit
+```bash
 data/Me/Streaming_History_Audio_*.json
-Each file must be a valid JSON file exported by Spotify, typically containing a list of listening sessions.
+```
 
-🚀 Usage
-Run the script with:
+Кожен файл повинен бути дійсним JSON, експортованим Spotify, зазвичай містить список сесій прослуховування.
 
-bash
-Copy
-Edit
+---
+
+## 🚀 Використання
+
+Запустіть скрипт командою:
+
+```bash
 python your_script_name.py
-The script processes all matching history files and creates the following output structure:
+```
 
-yaml
-Copy
-Edit
+Скрипт обробить усі файли за вказаним шаблоном та створить таку структуру виводу:
+
+```yaml
 stats/
 ├── month/
 │   ├── 2021.txt
@@ -48,47 +52,46 @@ stats/
 │   └── ...
 ├── years.txt
 └── authors.txt
-Output Files
-stats/month/YYYY.txt — per-month listening stats for each year, including:
+```
 
-Total listening time
+* **stats/month/YYYY.txt** — місячна статистика прослуховувань за кожний рік, включає:
 
-Top 5 tracks for each month
+  * Загальний час прослуховувань
+  * Топ-5 пісень для кожного місяця
+  * Топ-5 артистів для кожного місяця
 
-Top 5 artists for each month
+* **stats/years.txt** — річні підсумки та топові треки/артисти за рік, а також загальні топи треків та артистів.
 
-stats/years.txt — yearly totals and top tracks/artists by year, plus overall top tracks and artists.
+* **stats/authors.txt** — топ-15 артистів за весь час та їхні топ-5 треків (з кількістю прослуховувань понад 5).
 
-stats/authors.txt — top 15 artists of all time and their top 5 tracks (with more than 5 plays).
+---
 
-🧠 Features
-Total Listening Time: Calculates total time listened across all files.
+## 🧠 Особливості
 
-Per-Year and Per-Month Summaries: Organizes your listening time by year and month.
+* **Загальний час прослуховувань:** обчислюється загальний час прослуховувань з усіх файлів.
+* **Щорічні та щомісячні підсумки:** організація часу прослуховувань за роками та місяцями.
+* **Топ треків та артистів:**
 
-Top Tracks and Artists:
+  * Місячні топ-5 пісень та артистів
+  * Річні топ-5 пісень та артистів
+  * Загальний топ-10 треків та топ-15 артистів
+* **Період активності:** відображає роки, коли трек або артист з'являлися в історії.
+* **Форматований вивід:** тривалості відображаються у форматі `HHh MMm SSs`, а діапазони років — як `2019–2021`.
 
-Monthly top 5 tracks and artists
+---
 
-Yearly top 5 tracks and artists
+## 📌 Примітки
 
-All-time top 10 tracks and top 15 artists
+* Переконайтеся, що JSON-файли кодуються в UTF-8.
+* Скрипт автоматично пропускає файли, якщо не знайдено жодного відповідного за шаблоном.
+* Місячна статистика записується українською (наприклад, мітки `Топ-5 пісень`).
 
-Track and Artist Lifespan: Shows years when a track or artist appeared in your history.
+---
 
-Formatted Output: Time durations are shown in HHh MMm SSs format, and year ranges like 2019-2021.
+## 🧩 Налаштування
 
-📌 Notes
-Ensure your streaming history JSON files are properly encoded in UTF-8.
+За потреби можна змінити змінну `mefilepass` для вказання іншої теки чи шаблону файлів:
 
-The script automatically skips files if no matches are found for the given path.
-
-Monthly stats are written in Ukrainian (e.g., labels like "Топ-5 пісень").
-
-🧩 Customization
-You can change the mefilepass variable to point to a different folder or filename pattern:
-
-python
-Copy
-Edit
+```python
 mefilepass = 'data/Me/Streaming_History_Audio_*.json'
+```
