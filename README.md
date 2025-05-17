@@ -55,12 +55,35 @@ Before running the script, you need to download your extended streaming history 
 Place your Spotify streaming history JSON files in a directory, for example:
 
 ```bash
-data/Me/Streaming_History_Audio_*.json
+Spotify-Data/data/Me/
 ```
 
 Each file must be a valid JSON exported by Spotify, typically containing a list of listening sessions.
 
 ---
+
+Your project will look like:
+```bash
+Spotify-Data
+├── README.md
+├── data
+│   └── Me
+│       ├── ReadMeFirst_ExtendedStreamingHistory.pdf
+│       ├── Streaming_History_Audio_2021-2024_0.json
+│       ├── Streaming_History_Audio_2024-2025_1.json
+│       ├── Streaming_History_Audio_2025_2.json
+│       └── Streaming_History_Video_2024.json
+├── main.py
+└── stats
+    ├── authors.txt
+    ├── month
+    │   ├── 2021.txt
+    │   ├── 2022.txt
+    │   ├── 2023.txt
+    │   ├── 2024.txt
+    │   └── 2025.txt
+    └── years.txt
+```
 
 ## 🚀 Usage
 
