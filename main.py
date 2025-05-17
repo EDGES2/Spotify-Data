@@ -4,6 +4,8 @@ import os
 import pandas as pd
 import calendar
 
+mefilepass = 'data/Me/Streaming_History_Audio_*.json'
+
 # Форматування часу в HHh MMm SSs
 def format_hms(total_seconds: float) -> str:
     total_seconds = int(total_seconds)
@@ -34,7 +36,6 @@ def process_spotify_data(file_pattern: str):
     if not files:
         raise FileNotFoundError(f"No files matching '{file_pattern}'")
 
-    # Зчитування JSON
     data = []
     for path in files:
         with open(path, 'r', encoding='utf-8') as f:
@@ -156,39 +157,46 @@ def process_spotify_data(file_pattern: str):
         'years_per_author': years_per_author
     }
 
-
 if __name__ == "__main__":
-    stats = process_spotify_data('data/Streaming_History_Audio_*.json')
+    stats = process_spotify_data(mefilepass)
 
     # Створюємо директорію для результатів перед записом файлів
     stats_dir = 'stats'
     os.makedirs(stats_dir, exist_ok=True)
 
-    # Запис month.txt з треками та авторами під місяцем
-    with open(os.path.join(stats_dir, 'month.txt'), 'w', encoding='utf-8') as f:
-        for _, row in stats['sec_month'].sort_values(['year','month']).iterrows():
-            year, month, secs = int(row['year']), int(row['month']), row['seconds_played']
-            month_name = calendar.month_name[month]
-            # Загальна тривалість по місяцю
-            f.write(f"{month_name}: {format_hms(secs)}\n")
+    # Створити папку month всередині stats
+    month_dir = os.path.join(stats_dir, 'month')
+    os.makedirs(month_dir, exist_ok=True)
 
-            # Топ-5 пісень
-            f.write("Топ-5 пісень:\n")
-            df_t = stats['top5_month']
-            mask_t = (df_t['year']==year) & (df_t['month']==month)
-            for _, tr in df_t[mask_t].iterrows():
-                f.write(f" {tr['master_metadata_track_name']}: {format_hms(tr['seconds_played'])} "
-                        f"({tr['plays']} plays) {format_years(tr['years_list'])}\n")
+    # Для кожного року створюємо файл YYYY.txt і записуємо місячні дані
+    for year in stats['sec_year']['year'].sort_values():
+        year_file = os.path.join(month_dir, f"{year}.txt")
+        with open(year_file, 'w', encoding='utf-8') as f:
+            # Пишемо заголовок з роком
+            f.write(f"{year}\n")
+            monthly = stats['sec_month'][stats['sec_month']['year'] == year]
+            for _, row in monthly.sort_values('month').iterrows():
+                month_name = calendar.month_name[int(row['month'])]
+                secs = row['seconds_played']
+                f.write(f"{month_name}: {format_hms(secs)}\n")
 
-            # Топ-5 авторів
-            f.write("\nТоп-5 авторів:\n")
-            df_a = stats['top5_auth_month']
-            mask_a = (df_a['year']==year) & (df_a['month']==month)
-            for _, au in df_a[mask_a].iterrows():
-                f.write(f" {au['master_metadata_album_artist_name']}: {format_hms(au['seconds_played'])} "
-                        f"({au['plays']} plays) {format_years(au['years_list'])}\n")
+                # Топ-5 пісень за місяць
+                f.write("Топ-5 пісень:\n")
+                df_t = stats['top5_month']
+                mask_t = (df_t['year'] == year) & (df_t['month'] == row['month'])
+                for _, tr in df_t[mask_t].iterrows():
+                    f.write(f" {tr['master_metadata_track_name']}: {format_hms(tr['seconds_played'])} "
+                            f"({tr['plays']} plays) {format_years(tr['years_list'])}\n")
 
-            f.write("\n")
+                # Топ-5 авторів за місяць
+                f.write("\nТоп-5 авторів:\n")
+                df_a = stats['top5_auth_month']
+                mask_a = (df_a['year'] == year) & (df_a['month'] == row['month'])
+                for _, au in df_a[mask_a].iterrows():
+                    f.write(f" {au['master_metadata_album_artist_name']}: {format_hms(au['seconds_played'])} "
+                            f"({au['plays']} plays) {format_years(au['years_list'])}\n")
+
+                f.write("\n")
 
     # Запис years.txt
     with open(os.path.join(stats_dir, 'years.txt'), 'w', encoding='utf-8') as f:
@@ -220,7 +228,7 @@ if __name__ == "__main__":
     with open(os.path.join(stats_dir, 'authors.txt'), 'w', encoding='utf-8') as f:
         for _, au in stats['top15_auth_all'].iterrows():
             name = au['master_metadata_album_artist_name']
-            f.write(f"{name}: {format_hms(au['total_seconds'])} ({au['plays']} plays)")
+            f.write(f"{name}: {format_hms(au['total_seconds'])} ({au['plays']} plays)\n")
             for _, tr in stats['top5_authors_tracks'][stats['top5_authors_tracks']['master_metadata_album_artist_name']==name].iterrows():
                 f.write(f" {tr['master_metadata_track_name']}: {format_hms(tr['seconds_played'])} "
                         f"({tr['plays']} plays) {format_years(tr['years_list'])}\n")
