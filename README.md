@@ -31,7 +31,7 @@ Before running the script, you need to download your extended streaming history 
    ```
    https://www.spotify.com/account/privacy/
    ```
-2. Under **Download your data**, select **Account data**
+2. Under **Download your data**, select **Extended streaming history data**
 <img width="750" alt="Screenshot 2025-05-17 at 17 29 49" src="https://github.com/user-attachments/assets/9452eb10-09ff-4a3a-aec3-c63adee10cb4" />
 
 3. Click **Request data** and wait for the email link (valid for 14 days).
